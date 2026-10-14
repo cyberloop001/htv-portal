@@ -1,0 +1,76 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id            String       @id @default(cuid())
+  name          String
+  users         CompanyUser[]
+  requests      Request[]
+  createdAt     DateTime    @default(now())
+  isHtvInternal Boolean     @default(false)
+}
+
+model User {
+  id        String       @id // Clerk user ID
+  email     String       @unique
+  name      String?
+  companies CompanyUser[]
+  requests  Request[]
+  messages  Message[]
+  firstName String?
+  lastName  String?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+}
+
+model CompanyUser {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  company   Company  @relation(fields: [companyId], references: [id])
+  companyId String
+  role      String   // "ADMIN", "MANAGER", "TEAM_MEMBER", "SUPER_ADMIN", "OPERATIONS_MANAGER", "SUPPORT_ANALYST"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, companyId])
+}
+
+model Request {
+  id            String    @id @default(cuid())
+  title         String
+  description   String
+  category      String
+  status        String    @default("Submitted")
+  company       Company   @relation(fields: [companyId], references: [id])
+  companyId     String
+  user          User      @relation(fields: [userId], references: [id])
+  userId        String
+  messages      Message[]
+  linearIssueId String?   @unique
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  content   String
+  request   Request  @relation(fields: [requestId], references: [id])
+  requestId String
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  createdAt DateTime @default(now())
+}
